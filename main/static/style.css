@@ -1,75 +1,33 @@
+/* Global styles */
 body {
-	font-family: Arial, sans-serif;
-	font-size: 16px;
-  }
-  
-  /* Set the container width and margin */
-  .container {
-	max-width: 800px;
-	margin: 0 auto;
-	padding: 20px;
-  }
-  
-  /* Style the sliders */
-  .form-control-range {
-	-webkit-appearance: none;
-	width: 100%;
-	height: 10px;
-	border-radius: 5px;
-	background: #ddd;
-	outline: none;
-	opacity: 0.7;
-	-webkit-transition: .2s;
-	transition: opacity .2s;
-  }
-  
-  .form-control-range:hover {
-	opacity: 1;
-  }
-  
-  .form-control-range::-webkit-slider-thumb {
-	-webkit-appearance: none;
-	appearance: none;
-	width: 20px;
-	height: 20px;
-	border-radius: 50%;
-	background: #4CAF50;
-	cursor: pointer;
-  }
-  
-  .form-control-range::-moz-range-thumb {
-	width: 20px;
-	height: 20px;
-	border-radius: 50%;
-	background: #4CAF50;
-	cursor: pointer;
-  }
-  
-  /* Style the file upload input */
-  .form-control-file {
-	display: block;
-	margin-top: 10px;
-  }
-  
-  /* Style the submit button */
-  .btn-primary {
-	margin-top: 10px;
-	background-color: #4CAF50;
-	border-color: #4CAF50;
-  }
-  
-  .btn-primary:hover {
-	background-color: #3e8e41;
-	border-color: #3e8e41;
-  }
-  
-  /* Responsive layout */
-  @media screen and (max-width: 768px) {
-	.container {
-	  padding: 10px;
-	}
-	.col-md-6 {
-	  width: 100%;
-	  margin-bottom: 20px;
-	}
-  }
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+}
+
+img {
+    max-width: 100%;
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-row {
+    margin-bottom: 1rem;
+}
+
+.form-check-inline {
+    margin-right: 1rem;
+}
+
+/* Button styles */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}

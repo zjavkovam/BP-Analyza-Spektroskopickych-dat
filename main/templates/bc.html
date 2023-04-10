@@ -3,32 +3,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Monika Zjavková's Website</title>
+	<title>My NMR App</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous"/>
 </head>
 <body>
 	<form method="post" enctype="multipart/form-data" action="{% url 'process' %}">
 		{% csrf_token %}
-		<div class="form-group">
-		  <label for="threshold">Threshold:</label>
-		  <input type="range" class="form-control-range" id="threshold" name="threshold" min="0" max="100" value="50">
+		<div class="row">
+			<div class="col-md-6">
+				<img src="{% static 'figure_nmrglue.png' %}?{% now 'U' %}" alt="My Image">
+			</div>
+			<div class="col-md-6">
+				<div class="form-group">
+					<label for="threshold">Threshold:</label>
+					<select class="form-control" id="threshold" name="threshold">
+						<option value="3">3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+						<option value="6">6</option>
+						<option value="7">7</option>
+						<option value="8">8</option>
+						<option value="9">9</option>
+						<option value="10">10</option>
+						<option value="11" selected>11</option>
+						<option value="12">12</option>
+					</select>
+				</div>
+				<div class="form-row">
+					<div class="col pr-md-1">
+						<div class="form-group">
+							<label for="ppm_start">PPM start:</label>
+							<input type="number" class="form-control" id="ppm_start" name="ppm_start" min="-10" max="10" step="0.5" value="-0.5">
+						</div>
+					</div>
+					<div class="col">
+						<div class="form-group">
+							<label for="ppm_end">PPM end:</label>
+							<input type="number" class="form-control" id="ppm_end" name="ppm_end" min="-10" max="15" step="0.5" value="10">
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="instrument_type">Instrument type:</label><br>
+					<div class="form-check form-check-inline">
+						<input class="form-check-input" type="radio" name="instrument_type" id="bruker" value="bruker" checked>
+						<label class="form-check-label" for="bruker">Bruker</label>
+					</div>
+					<div class="form-check form-check-inline">
+						<input class="form-check-input" type="radio" name="instrument_type" id="varian" value="varian">
+						<label class="form-check-label" for="varian">Varian</label>
+					</div>
+					<div class="form-check form-check-inline">
+						<input class="form-check-input" type="radio" name="instrument_type" id="varian" value="varian">
+						<label class="form-check-label" for="varian">Unknown</label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="show_thresholds">Show threshold</label>
+					<input type="checkbox" class="form-check-input" id="show_thresholds" name="show_thresholds" value="1" checked>
+				</div>
+				<div class="form-group">
+					<label for="show_peaks">Show peaks</label>
+					<input type="checkbox" class="form-check-input" id="show_peaks" name="show_peaks" value="1" checked>
+				</div>
+				<div class="form-group">
+					<label for="show_integrals">Show integrals</label>
+					<input type="checkbox" class="form-check-input" id="show_integrals" name="show_integrals" value="1" checked>
+				</div>
+				<div class="form-group">
+					<label for="my_directory">Choose a directory</label>
+					<input type="file" id="my_directory" name="my_directory" webkitdirectory mozdirectory multiple>
+				</div>
+				<button type="submit" class="btn btn-primary">Submit</button>
+				<p>{{ spec }}</p>
+			</div>
 		</div>
-		<div class="form-group">
-		  <label for="distance">Distance between peaks:</label>
-		  <input type="range" class="form-control-range" id="distance" name="distance" min="0" max="100" value="50">
-		</div>
-		<div class="form-group">
-		  <label for="ppm">PPM scale:</label>
-		  <input type="range" class="form-control-range" id="ppm" name="ppm" min="-1" max="10" value="5">
-		</div>
-		<div class="form-group">
-			<label for="file">Choose a file:</label>
-			<input type="file" class="form-control-file" id="directory" name="directory" webkitdirectory directory>
-		</div>
-		<button type="submit" class="btn btn-primary">Submit</button>
-	  </form>
+	</form>
+	<div class="text-center mt-3">
+		<a href="{% url 'find' spectrum_id=spectrum_id %}" class="btn btn-primary">Find Similar</a>
+	</div>
+	
 
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"
+  ></script>
 </body>
 </html>

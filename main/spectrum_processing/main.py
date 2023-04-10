@@ -2,12 +2,50 @@ import nmrglue as ng
 import matplotlib
 import numpy as np
 matplotlib.use('TkAgg')
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
+from main.models import *
 
 
 impurities = {"CDCl3": {"solvent": 7.26, "H2O": 1.56}}
 threshold = 1e10
 
+def load_data_B(path):
+    dic, data = ng.bruker.read(path)
+    data = ng.bruker.remove_digital_filter(dic, data)
+
+    # process the spectrum
+    data = ng.proc_base.zf_size(data, 32768)  # zero fill to 32768 points
+    data = ng.proc_base.fft(data)  # Fourier transform
+    data = ng.proc_autophase.autops(data, 'peak_minima')  # phase correction
+    data = ng.proc_base.di(data)  # discard the imaginaries
+    data = ng.proc_base.rev(data)  # reverse the data
+    return [dic, data]
+
+
+def load_data_V(name):
+    # dir_name = '/Users/mnk/Downloads/NMR FIIT/JN-99 - 6-NH2-BTZ-2-Me/jn99-1A_20190528_01/PROTON_01.fid' # directory where the Varian data is held.
+    dic, data = ng.varian.read(name, procpar_file='procpar')
+
+    udic = ng.varian.guess_udic(dic, data)
+    udic[0]['complex'] = True
+    udic[0]['encoding'] = 'direct'
+    udic[0]['sw'] = float(dic["procpar"]["sw"]["values"][0])
+    udic[0]['obs'] = float(dic["procpar"]["reffrq"]["values"][0])
+    udic[0]['car'] = float(dic["procpar"]["sw"]["values"][0]) / 2 - float(dic["procpar"]["rfl"]["values"][0])
+    udic[0]['label'] = '1H'
+
+    C = ng.convert.converter()
+    C.from_varian(dic, data, udic)
+    pdic, pdata = C.to_pipe()
+
+    pdic, pdata = ng.pipe_proc.sp(pdic, pdata, off=0.35, end=0.98, pow=2, c=1.0)
+    pdic, pdata = ng.pipe_proc.zf(pdic, pdata, auto=True)
+    pdic, pdata = ng.pipe_proc.ft(pdic, pdata, auto=True)
+    pdata = ng.proc_autophase.autops(pdata, 'peak_minima')
+    pdic, pdata = ng.pipe_proc.di(pdic, pdata)
+
+    return dic, pdic, pdata
 
 
 def draw_integrals(integral_list, data, ppm_scale, ax):
@@ -58,65 +96,88 @@ def delete_impurities(integral_list, percent, data):
     return integral_list
 
 
-
-def load_data(path):
-    dic, data = ng.bruker.read(path)
-    data = ng.bruker.remove_digital_filter(dic, data)
-
-    # process the spectrum
-    data = ng.proc_base.zf_size(data, 32768)  # zero fill to 32768 points
-    data = ng.proc_base.fft(data)  # Fourier transform
-    data = ng.proc_autophase.autops(data, 'peak_minima')  # phase correction
-    data = ng.proc_base.di(data)  # discard the imaginaries
-    data = ng.proc_base.rev(data)  # reverse the data
-    return [dic, data]
-
 def integration(data, peak_table, peak_locations_ppm):
     list = {}
     list2 = []
     for peak_number in range(len(peak_locations_ppm) - 1):
         loc_ppm = peak_locations_ppm[peak_number]
-        loc_pts = int(peak_table['X_AXIS'][peak_number])
-        fwhm = peak_table['X_LW'][peak_number]  # begining of peak
+        loc_pts = int(peak_table['X_AXIS'][peak_number]) # begining of peak
+        fwhm = peak_table['X_LW'][peak_number]  
         hwhm_int = int(np.floor(fwhm / 2.))
         peak_area = data[loc_pts - hwhm_int: loc_pts + hwhm_int + 1].sum()
 
         list[peak_area] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, round(loc_ppm,2)]
         list2.append([peak_area, loc_ppm])
-    return list, list2
+    return list
 
 
-def join_close(i_list):
+def join_close(vdic, dic, integral_list, type):
     new = {}
-    l = []
-    v = 0
-    for i in i_list:
-        if not l:
-            l = i_list[i]
-            v = i
-            continue
-        if abs(l[2] - i_list[i][2]) <= 0.05:
-            v = (v+i)/2
-            l[0] = min(l[0], i_list[i][0])
-            l[1] = max(l[1], i_list[i][1])
-            l[2] = max(l[2], i_list[i][2])
-        else:
-            new[v] = l
-            l = []
-            v = 0
-        if l != [] and i == list(i_list)[-1]:
-            new[v] = l
+    new_key = list(integral_list.keys())[0]
+    new_element = integral_list[new_key]
+    max_peak_p = new_element[2]
+    max_peak_k = new_key
+
+    if type == "v":
+        obs_freq = float(vdic["procpar"]["reffrq"]["values"][0])
+    else:
+        obs_freq = dic['acqus']['O1'] #in Hz
+ 
+ 
+    for i, key in enumerate(integral_list.keys()):
+        if i < len(integral_list.keys()) - 1:
+            first_v = integral_list[key]
+            next_key = list(integral_list.keys())[i+1]
+            second_v = integral_list[next_key]
+            #chemical shifts in ppm 
+            peak1_pos = first_v[2]
+            peak2_pos = second_v[2]
+
+            #Hz = (Chemical shift in ppm * Observed frequency in MHz) / 1,000,000
+            peak1 = obs_freq * peak1_pos  
+            peak2 = obs_freq * peak2_pos  
+
+            # Calculate the distance between the first two peaks
+            distance = abs(peak2 - peak1)
+
+            #if distance <=20:
+            if abs(peak1_pos-peak2_pos) < 0.05: 
+                #merge 
+                new_key = new_key + next_key
+                if next_key > max_peak_k:
+                    max_peak_p = second_v[2]
+                    max_peak_k = next_key
+                new_element = [min(new_element[0], second_v[0]), max(new_element[1], second_v[1]), max_peak_p]            
+            else:
+                #add to list 
+                new[new_key] = new_element
+                #reset values
+                new_key = next_key
+                new_element = integral_list[next_key]
+                max_peak_p = new_element[2]
+                max_peak_k = new_key
+
+    new[new_key] = new_element
     return new
 
-def draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax):
-    ax.plot(peak_locations_ppm, peak_amplitudes, 'ro')
-    ax.hlines(threshold, xmin=0, xmax=100, linestyle="--", color="k")
+
+def draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, parameters, th):
+    #peak marking
+    if parameters["show_peaks"]:
+        ax.plot(peak_locations_ppm, peak_amplitudes, 'ro')
+
+    #threshold line
+    if parameters["show_threshold"]:
+        ax.hlines(th, xmin=0, xmax=100, linestyle="--", color="k")
+
     ax.plot(ppm_scale, data, "k-")
     ax.invert_xaxis()
-    ax.set_xlim(9, -0.5)
+ 
+    ax.set_xlim(float(parameters["ppm_end"]), float(parameters["ppm_start"]))
+    #ax.set_xlim(9,7)
     ax.set_xlabel('PPM')
-    plt.show()
-    fig.savefig('figure_nmrglue.png')
+    fig.savefig('./main/static/figure_nmrglue.png')
+  
 
 
 def format_spectrum(integral_list):
@@ -126,67 +187,89 @@ def format_spectrum(integral_list):
 
     return new
 
+def save_spectrum(dic, udic, parameters, spectrum, integral_list):
+    
+    #solvent = Solvents.objects.get(name='CDCl3')
+    #solvent = Solvents.objects.get(name='ASDJASD')
+    #solvent.id
+    # Create a new spectrum instance
+    # Create a new user instance
+    user = User(name="Monika", password="monika")
+    user.save()
+    
+    # Create a new solvent instance
+    solvent = Solvent(name="CDCl3")
+    solvent.save()
+    
+    # Create a new compounds instance
+    compound = Compound(name="MyCompound", molecular_formula="C6H12O6")
+    compound.save()
+    
+    # Create a new spectrum instance
+    spec = Spectrum(user=user, solvent=solvent, compound=compound, formated=spectrum)
+    spec.save()
 
-def num_sim(n1, n2):
-    return 1 - abs(n1 - n2) / (n1 + n2)
+    # Create peaks for the spectrum
+    for peak_area, peak_info in integral_list.items():
+        peak = Peak(spectrum=spec, ppm=peak_info[2], integral_area=peak_area)
+        peak.save() 
+
+    return spec
+
+def main(uploaded_files, parameters):
+    #parameters = [instrument_type, threshold, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds]
+    vdic = 0
+    type = "v"
+    if parameters["type"] == "varian" or (parameters["type"] == "uknown" and len(uploaded_files) == 4):
+        vdic, dic, data = load_data_V("media")
+
+        # conversion to ppm
+        uc = ng.pipe.make_uc(dic, data)
+        ppm_scale = uc.ppm_scale()
 
 
-def compare_components(c1, c2):
-    components1 = c1.split()
-    components2 = c2.split()
-
-    p1 = num_sim(float(components1[0]), float(components2[0]))
-    p2 = components1[1] == components2[1]
-    p3 = num_sim(float(components1[2][:-2]), float(components2[2][:-2]))
-
-    return ((p1 * 2 + p2 + p3) / 4)
-
-
-def compare(s1, s2):
-    if s1 > s2:
-        s1, s2 = s2, s1
-
-    similarity_index = []
-    for i in range(0, len(s1) - 1):
-        similarity_index.append([])
-        for j in range(0, len(s2) - 1):
-            similarity_index[i].append(compare_components(s1[i], s2[j]))
-
-    sum = 0
-    for i in similarity_index:
-        sum += max(i)
-
-    print(sum / len(similarity_index))
-
-def process_spectrum(path):
-    dic, data = load_data(path)
-
-    # conversion to ppm
-    udic = ng.bruker.guess_udic(dic, data)
-    uc = ng.fileiobase.uc_from_udic(udic)
-    ppm_scale = uc.ppm_scale()
+    else:
+        dic, data = load_data_B("media")
+        
+        # conversion to ppm
+        udic = ng.bruker.guess_udic(dic, data)
+        uc = ng.fileiobase.uc_from_udic(udic)
+        ppm_scale = uc.ppm_scale()
+        type = "b"
+   
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    # pick picking
-    peak_table = ng.peakpick.pick(data, pthres=threshold, algorithm='connected', cluster=True)
+
+    #peak picking
+    # Calculate the baseline noise level using the MAD method
+    baseline = np.median(np.abs(data - np.median(data)))
+    noise_level = 1.4826 * baseline  # 1.4826 is a scaling factor for MAD
+
+    # Set the threshold to a multiple of the noise level
+    threshold = 50 * noise_level 
+    peak_table = ng.peakpick.pick(data, pthres=threshold, algorithm='downward', cluster=True)
     peak_locations_ppm = [uc.ppm(i) for i in peak_table['X_AXIS']]
     peak_amplitudes = data[peak_table['X_AXIS'].astype('int')]
 
-    integral_list, list2 = integration(data, peak_table, peak_locations_ppm)
+    #integrals
+    integral_list = integration(data, peak_table, peak_locations_ppm)
 
     #ratios of integrals
     integral_list = find_ratios(integral_list)
-    integral_list = join_close(integral_list)
+    
+
+    integral_list = join_close(vdic, dic, integral_list, type)
 
     #draw integrals
-    draw_integrals(integral_list, data, ppm_scale, ax)
+    if parameters["show_integrals"]:
+        draw_integrals(integral_list, data, ppm_scale, ax)
 
     #draww plot
-    draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax)
+    draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, parameters, threshold)
 
-    print(integral_list)
     formated = format_spectrum(integral_list)
-    return formated
+    spec = save_spectrum(dic, vdic, parameters, formated, integral_list)
+    return spec
 
