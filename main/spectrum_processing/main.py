@@ -98,7 +98,6 @@ def delete_impurities(integral_list, percent, data):
 
 def integration(data, peak_table, peak_locations_ppm):
     list = {}
-    list2 = []
     for peak_number in range(len(peak_locations_ppm) - 1):
         loc_ppm = peak_locations_ppm[peak_number]
         loc_pts = int(peak_table['X_AXIS'][peak_number]) # begining of peak
@@ -107,7 +106,6 @@ def integration(data, peak_table, peak_locations_ppm):
         peak_area = data[loc_pts - hwhm_int: loc_pts + hwhm_int + 1].sum()
 
         list[peak_area] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, round(loc_ppm,2)]
-        list2.append([peak_area, loc_ppm])
     return list
 
 
@@ -202,7 +200,7 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list):
     solvent.save()
     
     # Create a new compounds instance
-    compound = Compound(name="MyCompound", molecular_formula="C6H12O6")
+    compound = Compound(name="Unknown", molecular_formula="Unknown")
     compound.save()
     
     # Create a new spectrum instance
@@ -217,7 +215,7 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list):
     return spec
 
 def main(uploaded_files, parameters):
-    #parameters = [instrument_type, threshold, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds]
+    #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds]
     vdic = 0
     type = "v"
     if parameters["type"] == "varian" or (parameters["type"] == "uknown" and len(uploaded_files) == 4):
@@ -248,8 +246,12 @@ def main(uploaded_files, parameters):
     noise_level = 1.4826 * baseline  # 1.4826 is a scaling factor for MAD
 
     # Set the threshold to a multiple of the noise level
-    threshold = 50 * noise_level 
+    threshold = int(parameters['threshold_num']) * noise_level 
     peak_table = ng.peakpick.pick(data, pthres=threshold, algorithm='downward', cluster=True)
+
+    sorted_indices = peak_table['X_AXIS'].argsort()
+    peak_table = peak_table[sorted_indices]
+
     peak_locations_ppm = [uc.ppm(i) for i in peak_table['X_AXIS']]
     peak_amplitudes = data[peak_table['X_AXIS'].astype('int')]
 

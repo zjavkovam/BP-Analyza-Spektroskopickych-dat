@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db import models
 
 # Create your models here.
@@ -28,6 +29,8 @@ class Spectrum(models.Model):
     solvent = models.ForeignKey(Solvent, on_delete=models.CASCADE)
     compound = models.ForeignKey(Compound, on_delete=models.CASCADE)
     formated = models.TextField()
+    processed = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'solvent', 'compound', 'formated')
@@ -39,13 +42,12 @@ class Peak(models.Model):
     ppm = models.FloatField()
     integral_area = models.FloatField()
 
-
-
 class Comparison(models.Model):
     spectrum1 = models.ForeignKey(Spectrum, on_delete=models.CASCADE, related_name='comparisons1')
     spectrum2 = models.ForeignKey(Spectrum, on_delete=models.CASCADE, related_name='comparisons2')
     similarity_score = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
-
+    """ 
     class Meta:
         unique_together = ('spectrum1', 'spectrum2')
+    """

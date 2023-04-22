@@ -8,7 +8,7 @@ from django import forms
 from .spectrum_processing.main import main
 from .spectrum_processing.find import find_similar
 from .models import Spectrum
-
+from .models import Compound
 # Create your views here.
 
 
@@ -21,7 +21,7 @@ def process(request):
     if request.method == 'POST':
         parameters = {
             "type": request.POST.get('instrument_type'), 
-            "threshold": request.POST.get('threshold'), 
+            "threshold_num": request.POST.get('threshold'), 
             "ppm_start" : request.POST.get('ppm_start'), 
             "ppm_end":  request.POST.get('ppm_end'), 
             "show_integrals": request.POST.get('show_integrals'), 
@@ -52,12 +52,33 @@ def find(request, spectrum_id):
     spectra = find_similar(spectrum)
     context = {
         'spectra': spectra,
-        'spec': spectrum.formated}
+        'spec': spectrum.formated,
+        'spectrum_id': spectrum_id}
     return render(request, 'find.html', context)
 
 def search(request):
-    return render(request, 'find.html', context)
+    return render(request, 'find.html')
 
 def add(request):
-    # Code for adding to database goes here
-    return render(request, 'find.html')
+    if request.method == 'POST':
+        # Get the compound name and spectrum ID from the request
+        compound_name = request.POST.get('compound_name')
+        spectrum_id = request.POST.get('spectrum_id')
+
+        # Update the spectrum instance with the given ID
+        spectrum = Spectrum.objects.get(id=spectrum_id)
+        spectrum = Spectrum.objects.get(id=spectrum_id)
+        compound, created = Compound.objects.get_or_create(molecular_formula=compound_name)
+
+        # If the compound was just created, set additional attributes
+        if created:
+            compound.name = "Name"
+            compound.save()
+        spectrum.compound = compound
+        spectrum.processed = True
+        spectrum.save()
+        
+        # Retrieve all processed spectra
+        processed_spectra = Spectrum.objects.filter(processed=True)
+        
+        return render(request, 'spectra_view.html', {'spectra': processed_spectra})
