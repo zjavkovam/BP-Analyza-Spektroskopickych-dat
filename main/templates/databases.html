@@ -1,0 +1,251 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Databases</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="navbar-brand" href="#">Databases</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#spectra">Spectra</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#solvent">Solvent</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#impurities">Impurities</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#compounds">Compounds</a>
+          </li>
+        </ul>
+        <button class="btn btn-outline-secondary" onclick="history.back()">Back</button>
+      </div>
+    </nav>
+
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    
+    <div class="container mt-3">
+
+        <div id="spectra">
+            <h2>Spectra</h2>
+
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Index</th>
+                  <th>Spectrum</th>
+                  <th>Compound</th>
+                  <th>Solvent</th>
+                  <th>Processed by</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for spectrum in spectra %}
+                <tr>
+                  <td>{{ spectrum.id }}</td>
+                  <td>{{ spectrum.formated }}</td>
+                  <td>{{ spectrum.compound.molecular_formula  }}</td>
+                  <td>{{ spectrum.solvent.name }}</td>
+                  <td>{{ spectrum.user.name }}</td>
+                  <td>{{ spectrum.timestamp }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        <div id="solvent" style="display: none;">
+            <h2>Solvent</h2>
+            
+            <h5>Add New Solvent</h5>
+            <form method="POST" action="{% url 'database_management' %}">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="name" name="name" placeholder='Name'>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="position" name="position" placeholder='PPM Position'>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <button type="submit" name="add_solvent" class="btn btn-primary">Add Solvent</button>
+                    </div>
+                </div>
+            </form>
+            <h5>Delete Solvent</h5>
+            <form method="POST" action="{% url 'delete' %}" method="POST">
+              {% csrf_token %}
+              <input type="submit" name="delete_all_solvent" class="btn btn-primary" value="Delete all">
+              <input type="submit" name="delete_last_solvent" class="btn btn-primary" value="Delete last">
+            </form>
+          
+          
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Index</th>
+                  <th>Solvent</th>
+                  <th>PPM Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for solvent in solvents %}
+                <tr>
+                  <td>{{ solvent.id }}</td>
+                  <td>{{ solvent.name }}</td>
+                  <td>{{ solvent.position }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+
+        <div id="impurities" style="display: none;">
+            <h2>Impurities</h2>
+
+            <h5>Add New Impurity</h5>
+            <form method="POST" action="{% url 'database_management' %}">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="name" name="name" placeholder='Name'>
+                        </div>
+                    </div>
+                    <div class="col">
+                      <div class="form-group">
+                          <input type="text" class="form-control" id="solvent" name="solvent" placeholder='Solvent'>
+                      </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="position" name="position" placeholder='PPM Position'>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <button type="submit" name="add_impurity" class="btn btn-primary">Add Impurity</button>
+                    </div>
+                </div>
+            </form>
+            
+            <h5>Delete Impurity</h5>
+            <form method="POST" action="{% url 'delete' %}" method="POST">
+              {% csrf_token %}
+              <input type="submit" name="delete_all_impurities" class="btn btn-primary" value="Delete all">
+              <input type="submit" name="delete_last_impurity" class="btn btn-primary" value="Delete last">
+            </form>
+
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Index</th>
+                  <th>Impurity</th>
+                  <th>Solvent</th>
+                  <th>PPM Position in the solvent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for impurity in impurities %}
+                <tr>
+                  <td>{{ impurity.index }}</td>
+                  <td>{{ impurity.name }}</td>
+                  <td>{{ impurity.solvent.name }}</td>
+                  <td>{{ impurity.position }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+        </div>
+
+        <div id="compounds" style="display: none;">
+            <h2>Compounds</h2>
+
+            <h5>Add New Compound</h5>
+            <form method="POST" action="{% url 'database_management' %}">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="col">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="name" name="name" placeholder='Name'>
+                        </div>
+                    </div>
+                    <div class="col">
+                      <div class="form-group">
+                          <input type="text" class="form-control" id="formula" name="formula" placeholder='Molecular formula'>
+                      </div>
+                    </div>
+                    <div class="col">
+                        <button type="submit" name="add_compound" class="btn btn-primary">Add Compound</button>
+                    </div>
+                </div>
+            </form>
+
+            <h5>Delete Compound</h5>
+            <form method="POST" action="{% url 'delete' %}" method="POST">
+              {% csrf_token %}
+              <input type="submit" name="delete_all_compounds" class="btn btn-primary" value="Delete all">
+              <input type="submit" name="delete_last_compound" class="btn btn-primary" value="Delete last">
+            </form>
+          
+
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Index</th>
+                  <th>Compound</th>
+                  <th>Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for compound in compounds %}
+                <tr>
+                    <td>{{ compound.id }}</td>
+                    <td>{{ compound.molecular_formula }}</td>
+                    <td>{{ compound.name }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              
+        </div>  
+        
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+      $(function() {
+        // Show the spectra database by default
+        $('#spectra').show();
+        // Show the selected database when its button is clicked
+        $('.navbar-nav a').on('click', function(e) {
+          e.preventDefault();
+          // Hide all databases except the selected one
+          $('.container > div').hide();
+          $($(this).attr('href')).show();
+        });
+      });
+    </script>
+  </body>
+</html>

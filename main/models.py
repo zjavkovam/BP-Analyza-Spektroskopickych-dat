@@ -11,6 +11,7 @@ class User(models.Model):
 class Solvent(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
+    position = models.FloatField()
 
 class Impurity(models.Model):
     id = models.AutoField(primary_key=True)

@@ -196,12 +196,13 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list):
     user.save()
     
     # Create a new solvent instance
-    solvent = Solvent(name="CDCl3")
-    solvent.save()
+    try:
+        solvent = Solvent.objects.get(name="CDCl3")
+    except Solvent.DoesNotExist:
+        return -1
     
     # Create a new compounds instance
-    compound = Compound(name="Unknown", molecular_formula="Unknown")
-    compound.save()
+    compound = Compound.objects.filter(name="Unknown").order_by('id').first()
     
     # Create a new spectrum instance
     spec = Spectrum(user=user, solvent=solvent, compound=compound, formated=spectrum)
