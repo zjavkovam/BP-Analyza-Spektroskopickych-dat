@@ -6,10 +6,6 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from main.models import *
 
-
-impurities = {"CDCl3": {"solvent": 7.26, "H2O": 1.56}}
-threshold = 1e10
-
 def load_data_B(path):
     dic, data = ng.bruker.read(path)
     data = ng.bruker.remove_digital_filter(dic, data)
@@ -48,6 +44,21 @@ def load_data_V(name):
     return dic, pdic, pdata
 
 
+def delete_impurity(integral_list, solvent):
+    solvent = Solvent.objects.get(name=solvent)
+    impurities = Impurity.objects.filter(solvent=solvent)
+
+
+    for impurity in impurities:
+        position = impurity.position
+        
+        for peak_position in list(integral_list.keys()):
+            if abs(peak_position - float(position)) < 0.05 or abs(peak_position- 0) < 0.05 or abs(peak_position - float(solvent.position)) < 0.05:
+                del integral_list[peak_position] 
+    
+    return integral_list
+
+
 def draw_integrals(integral_list, data, ppm_scale, ax):
     for i in integral_list:
         start = int(integral_list[i][0])
@@ -59,40 +70,24 @@ def draw_integrals(integral_list, data, ppm_scale, ax):
         # plot the integration lines, limits and name of peaks
         ax.plot(peak_scale, peak.cumsum() / 100. + peak.max())
         ax.plot(peak_scale, [0] * len(peak_scale))
-        ax.text(peak_scale[0], 0.5 * peak.sum() / 100. + peak.max(), round(i), fontsize=10)
+        ax.text(peak_scale[0], 0.5 * peak.sum() / 100. + peak.max(), round(integral_list[i][2], 2), fontsize=10)
 
 
-def find_ratios(integral_list):
-    minimum = min(list(integral_list.keys()))
-    ratios = []
-    for i in integral_list:
-        ratio = round(i / minimum, 2)
-        ratios.append(ratio)
+def find_ratios(integral_list, H, max_ratio ):
+    # ppm: b,e,area 
 
-    integral_list = dict(zip(ratios, list(integral_list.values())))
-    return integral_list
+    maximum = max(integral_list.values(), key=lambda x: x[2])[2]
+    for key,values in integral_list.items():
+        integral_list[key][2] = round(values[2] * (float(max_ratio) / maximum), 2)
 
-
-def delete_impurities(integral_list, percent, data):
-    l = list(integral_list.keys())
-    l.sort()
-    last_integral = l[-1] * (percent / 100)
-    peaks = integral_list[l[-1]][2]
-    last_amplitude = 0
-    for peak in peaks:
-        last_amplitude += data[int(peak)]
-    last_amplitude /= len(peaks)
-
-    for i in l:
-        if last_integral > i:
-            to_delete = integral_list.pop(i)
-            data[int(to_delete[0]):int(to_delete[1])] = 0
-            continue
-
-        if not integral_list[i][2]:
-            to_delete = integral_list.pop(i)
-            data[int(to_delete[0]):int(to_delete[1])] = 0
-
+    if H != '':
+        for position, value in integral_list.items():
+            if float(H) == position:
+                ratios = []
+                peak_area = value[2]
+                for pos,val in integral_list.items():
+                    integral_list[pos][2] = round(val[2]/ peak_area, 2)
+                break
     return integral_list
 
 
@@ -101,61 +96,63 @@ def integration(data, peak_table, peak_locations_ppm):
     for peak_number in range(len(peak_locations_ppm) - 1):
         loc_ppm = peak_locations_ppm[peak_number]
         loc_pts = int(peak_table['X_AXIS'][peak_number]) # begining of peak
-        fwhm = peak_table['X_LW'][peak_number]  
-        hwhm_int = int(np.floor(fwhm / 2.))
-        peak_area = data[loc_pts - hwhm_int: loc_pts + hwhm_int + 1].sum()
+        fwhm = peak_table['X_LW'][peak_number]  #full width at half maximum
+        hwhm_int = int(np.floor(fwhm / 2.)) 
+        peak_area = data[loc_pts - hwhm_int: loc_pts + hwhm_int + 1].sum() 
 
-        list[peak_area] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, round(loc_ppm,2)]
+        list[round(loc_ppm,2)] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, peak_area]
+    return list
+
+def get_multiplicity(list):
+    multiplicity = 's'
+    list.append(multiplicity)
     return list
 
 
-def join_close(vdic, dic, integral_list, type):
+def join_close(uc, integral_list):
     new = {}
-    new_key = list(integral_list.keys())[0]
-    new_element = integral_list[new_key]
-    max_peak_p = new_element[2]
-    max_peak_k = new_key
+    new_position = list(integral_list.keys())[0]
+    new_element = integral_list[new_position]
+    max_peak_value = new_element[2]
+    max_peak_position = new_position
 
-    if type == "v":
-        obs_freq = float(vdic["procpar"]["reffrq"]["values"][0])
-    else:
-        obs_freq = dic['acqus']['O1'] #in Hz
- 
- 
-    for i, key in enumerate(integral_list.keys()):
-        if i < len(integral_list.keys()) - 1:
-            first_v = integral_list[key]
-            next_key = list(integral_list.keys())[i+1]
-            second_v = integral_list[next_key]
+    joined_peaks = {new_position:new_element}
+    for index, position in enumerate(integral_list.keys()):
+        # Prevent going out of index
+        if index < len(integral_list.keys()) - 1:
             #chemical shifts in ppm 
-            peak1_pos = first_v[2]
-            peak2_pos = second_v[2]
-
-            #Hz = (Chemical shift in ppm * Observed frequency in MHz) / 1,000,000
-            peak1 = obs_freq * peak1_pos  
-            peak2 = obs_freq * peak2_pos  
+            next_position = list(integral_list.keys())[index+1]
 
             # Calculate the distance between the first two peaks
-            distance = abs(peak2 - peak1)
+            peak1 = uc.i(str (position) + ' ppm')
+            peak2 = uc.i(str (next_position) + ' ppm')
 
-            #if distance <=20:
-            if abs(peak1_pos-peak2_pos) < 0.05: 
+            distance = abs(peak2 - peak1)
+            print(distance)
+            if distance <= 100:
+            #if abs(position-next_position) < 0.05: 
                 #merge 
-                new_key = new_key + next_key
-                if next_key > max_peak_k:
-                    max_peak_p = second_v[2]
-                    max_peak_k = next_key
-                new_element = [min(new_element[0], second_v[0]), max(new_element[1], second_v[1]), max_peak_p]            
+                next_element = integral_list[next_position]
+                joined_peaks[next_position] =  next_element
+                
+                new_area = integral_list[new_position][2] + integral_list[next_position][2]                    
+                if integral_list[next_position][2] > max_peak_value:
+                    max_peak_position = next_position
+                    max_peak_value = integral_list[next_position][2]
+                new_element = [min(new_element[0], next_element[0]), max(new_element[1], next_element[1]), new_area]            
             else:
                 #add to list 
-                new[new_key] = new_element
+                new_element = get_multiplicity(new_element)
+                new[max_peak_position] = new_element
+                
                 #reset values
-                new_key = next_key
-                new_element = integral_list[next_key]
-                max_peak_p = new_element[2]
-                max_peak_k = new_key
+                new_position = next_position
+                new_element = integral_list[next_position]
+                max_peak_value = new_element[2]
+                max_peak_position = new_position
+                joined_peaks = {new_position: new_element}
 
-    new[new_key] = new_element
+    new[max_peak_position] = new_element
     return new
 
 
@@ -181,23 +178,18 @@ def draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, par
 def format_spectrum(integral_list):
     new = []
     for i in integral_list:
-        new.append(str(round(integral_list[i][2], 2)) + " (s, " + str(i) + "H)")
+        new.append(str(round(i, 2)) + " ( "+ integral_list[i][3] + ", " + str(integral_list[i][2]) + "H)")
 
     return new
 
-def save_spectrum(dic, udic, parameters, spectrum, integral_list):
-    
-    #solvent = Solvents.objects.get(name='CDCl3')
-    #solvent = Solvents.objects.get(name='ASDJASD')
-    #solvent.id
-    # Create a new spectrum instance
-    # Create a new user instance
-    user = User(name="Monika", password="monika")
+def save_spectrum(dic, udic, parameters, spectrum, integral_list, solvent, name):
+
+    user = User(name=name, password="monika")
     user.save()
     
     # Create a new solvent instance
     try:
-        solvent = Solvent.objects.get(name="CDCl3")
+        solvent = Solvent.objects.get(name=solvent)
     except Solvent.DoesNotExist:
         return -1
     
@@ -216,25 +208,24 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list):
     return spec
 
 def main(uploaded_files, parameters):
-    #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds]
+    #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds, 1H, max-ratio, name]
     vdic = 0
-    type = "v"
     if parameters["type"] == "varian" or (parameters["type"] == "uknown" and len(uploaded_files) == 4):
         vdic, dic, data = load_data_V("media")
-
+        solvent = vdic["procpar"]['solvent']["values"][0]
         # conversion to ppm
         uc = ng.pipe.make_uc(dic, data)
         ppm_scale = uc.ppm_scale()
 
-
     else:
         dic, data = load_data_B("media")
-        
+        solvent = dic['acqus']['SOLVENT']
+
         # conversion to ppm
         udic = ng.bruker.guess_udic(dic, data)
         uc = ng.fileiobase.uc_from_udic(udic)
         ppm_scale = uc.ppm_scale()
-        type = "b"
+
    
 
     fig = plt.figure()
@@ -248,22 +239,27 @@ def main(uploaded_files, parameters):
 
     # Set the threshold to a multiple of the noise level
     threshold = int(parameters['threshold_num']) * noise_level 
-    peak_table = ng.peakpick.pick(data, pthres=threshold, algorithm='downward', cluster=True)
+    peak_table = ng.peakpick.pick(data, pthres=threshold, algorithm='downward')
 
+    #SORT
     sorted_indices = peak_table['X_AXIS'].argsort()
     peak_table = peak_table[sorted_indices]
 
+    #Get peak locations and amplitudes
     peak_locations_ppm = [uc.ppm(i) for i in peak_table['X_AXIS']]
     peak_amplitudes = data[peak_table['X_AXIS'].astype('int')]
 
     #integrals
     integral_list = integration(data, peak_table, peak_locations_ppm)
 
-    #ratios of integrals
-    integral_list = find_ratios(integral_list)
-    
+    #Delete impurities and solvent
+    integral_list = delete_impurity(integral_list, solvent)
 
-    integral_list = join_close(vdic, dic, integral_list, type)
+    #Join close peaks 
+    integral_list = join_close(uc, integral_list)
+
+    #ratios of integrals
+    integral_list = find_ratios(integral_list, parameters['1H'], parameters['max-ratio'])
 
     #draw integrals
     if parameters["show_integrals"]:
@@ -273,6 +269,6 @@ def main(uploaded_files, parameters):
     draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, parameters, threshold)
 
     formated = format_spectrum(integral_list)
-    spec = save_spectrum(dic, vdic, parameters, formated, integral_list)
+    spec = save_spectrum(dic, vdic, parameters, formated, integral_list, solvent, parameters['name'])
     return spec
 

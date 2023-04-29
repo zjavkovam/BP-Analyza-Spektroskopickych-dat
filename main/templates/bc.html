@@ -22,7 +22,9 @@
 				<a class="nav-link" href="#spectra">Process Spectrum</a>
 			  </li>
 			</ul>
-			<button class="btn btn-outline-secondary" onclick="history.back()">Back</button>
+			<button class="btn btn-outline-secondary">
+				<a href="{% url 'menu' %}">Back</a>
+			   </button>
 		  </div>
 		</div>
 	  </nav>
@@ -39,9 +41,9 @@
 						<option value="25">25</option>
 						<option value="40">40</option>
 						<option value="50">50</option>
-						<option value="75" selected>75</option>
+						<option value="75">75</option>
 						<option value="85">85</option>
-						<option value="100">100</option>
+						<option value="100" selected >100</option>
 						<option value="125">125</option>
 						<option value="150">150</option>
 						<option value="200">200</option>
@@ -51,13 +53,13 @@
 					<div class="col pr-md-1">
 						<div class="form-group">
 							<label for="ppm_start">PPM start:</label>
-							<input type="number" class="form-control" id="ppm_start" name="ppm_start" min="-10" max="10" step="0.5" value="-0.5">
+							<input type="number" class="form-control" id="ppm_start" name="ppm_start" min="-10" max="10" step="0.1" value="-0.5">
 						</div>
 					</div>
 					<div class="col">
 						<div class="form-group">
 							<label for="ppm_end">PPM end:</label>
-							<input type="number" class="form-control" id="ppm_end" name="ppm_end" min="-10" max="15" step="0.5" value="10">
+							<input type="number" class="form-control" id="ppm_end" name="ppm_end" min="-10" max="15" step="0.1" value="10">
 						</div>
 					</div>
 				</div>
@@ -82,11 +84,24 @@
 				</div>
 				<div class="form-group">
 					<label for="show_peaks">Show peaks</label>
-					<input type="checkbox" class="form-check-input" id="show_peaks" name="show_peaks" value="1" checked>
+					<input type="checkbox" class="form-check-input" id="show_peaks" name="show_peaks" value="1">
 				</div>
 				<div class="form-group">
 					<label for="show_integrals">Show integrals</label>
 					<input type="checkbox" class="form-check-input" id="show_integrals" name="show_integrals" value="1" checked>
+				</div>
+				<div class ="form-group">
+					<label for="1H-ppm">PPM for peak set as 1H</label>
+					<input type="number" class="form-control" id="1H-ppm" name="1H-ppm" min="0" step="0.01">
+				</div>
+				<div class="form=group">
+					<label for="max-ratio">Maximum Integral Area:</label>
+					<select id="max-ratio" name="max-ratio">
+						<option value="2">2</option>
+						<option value="3" selected>3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+					</select><br><br>
 				</div>
 				<div class="form-group">
 					<label for="my_directory">Choose a directory</label>

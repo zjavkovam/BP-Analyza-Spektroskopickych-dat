@@ -10,6 +10,7 @@ from .spectrum_processing.find import find_similar
 from django.contrib import messages
 from django.core.management import call_command
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
 from .models import Spectrum
 from .models import Compound
 from .models import Impurity
@@ -32,7 +33,10 @@ def process(request):
             "ppm_end":  request.POST.get('ppm_end'), 
             "show_integrals": request.POST.get('show_integrals'), 
             "show_peaks": request.POST.get('show_peaks'),
-            "show_threshold": request.POST.get('show_thresholds')
+            "show_threshold": request.POST.get('show_thresholds'),
+            "1H": request.POST.get('1H-ppm'),
+            "max-ratio": request.POST.get('max-ratio'),
+            "name": request.session.get('name'),
         }
 
         for filename in os.listdir("media"):
@@ -89,11 +93,16 @@ def add(request):
         return render(request, 'spectra_view.html', {'spectra': processed_spectra})
     
 def menu(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            request.session['name'] = name
+            return render(request, 'menu.html')
     return render(request, 'menu.html' )
 
 def database_management(request):
     if request.method == 'GET':
-        spectra = Spectrum.objects.all()
+        spectra = Spectrum.objects.filter(processed=True)
         solvents = Solvent.objects.all()
         impurities = Impurity.objects.all()
         compounds = Compound.objects.all()
