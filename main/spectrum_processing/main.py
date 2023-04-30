@@ -100,13 +100,14 @@ def integration(data, peak_table, peak_locations_ppm):
         hwhm_int = int(np.floor(fwhm / 2.)) 
         peak_area = data[loc_pts - hwhm_int: loc_pts + hwhm_int + 1].sum() 
 
-        list[round(loc_ppm,2)] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, peak_area]
+        list[round(loc_ppm,2)] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, peak_area, ' ']
     return list
 
-def get_multiplicity(list):
+def get_multiplicity(list, new_element):
+    print(list)
     multiplicity = 's'
-    list.append(multiplicity)
-    return list
+    new_element[3] = multiplicity
+    return new_element
 
 
 def join_close(uc, integral_list):
@@ -128,7 +129,6 @@ def join_close(uc, integral_list):
             peak2 = uc.i(str (next_position) + ' ppm')
 
             distance = abs(peak2 - peak1)
-            print(distance)
             if distance <= 100:
             #if abs(position-next_position) < 0.05: 
                 #merge 
@@ -139,10 +139,10 @@ def join_close(uc, integral_list):
                 if integral_list[next_position][2] > max_peak_value:
                     max_peak_position = next_position
                     max_peak_value = integral_list[next_position][2]
-                new_element = [min(new_element[0], next_element[0]), max(new_element[1], next_element[1]), new_area]            
+                new_element = [min(new_element[0], next_element[0]), max(new_element[1], next_element[1]), new_area, ' ']            
             else:
                 #add to list 
-                new_element = get_multiplicity(new_element)
+                new_element = get_multiplicity(joined_peaks, new_element)
                 new[max_peak_position] = new_element
                 
                 #reset values
