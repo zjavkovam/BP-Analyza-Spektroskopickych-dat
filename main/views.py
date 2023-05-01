@@ -198,6 +198,12 @@ def database_management(request):
 
 def delete(request):
     if request.method == 'POST':
+        if 'delete_all_spectra' in request.POST:
+            Compound.objects.all().delete()
+            messages.success(request, 'Deleted successfully.')
+        if 'delete_last_spectrum' in request.POST:
+            Compound.objects.last().delete()
+            messages.success(request, 'Deleted successfully.')
         if 'delete_all_solvent' in request.POST:
             Solvent.objects.all().delete()
             messages.success(request, 'Deleted successfully.')

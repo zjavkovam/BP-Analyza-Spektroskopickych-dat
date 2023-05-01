@@ -4,39 +4,47 @@ from main.models import Comparison
 
 import numpy as np
 
-def compare(s1, s2):
-    peaks1 = Peak.objects.filter(spectrum=s1.id)
-    peaks2 = Peak.objects.filter(spectrum=s2.id)
+def calculate_similarity(num1, num2):
+    if num1 == 0 and num2 == 0:
+        return 1.0
+    else:
+        similarity = 1 - abs(num1 - num2) / max(num1, num2)
+        return similarity
 
-    common_peaks = []
+def compare(spectrum1, spectrum2):
+    # Get all the peaks for the first spectrum
+    peaks1 = Peak.objects.filter(spectrum=spectrum1).order_by('ppm')
+
+    # Get all the peaks for the second spectrum
+    peaks2 = Peak.objects.filter(spectrum=spectrum2).order_by('ppm')
+
+
+    if len(peaks1) > len(peaks2):
+        peaks2, peaks1 = peaks1, peaks2
+
+    # Initialize variables for counting matching peaks and total peaks in both spectra
+    matches = 00
+
+    # Iterate through peaks in the smaller spectrum
     for peak1 in peaks1:
+        # Check if there is a matching peak in the larger spectrum
+        matching_peak = None
         for peak2 in peaks2:
-            if peak1.ppm == peak2.ppm:
-                common_peaks.append((peak1, peak2))
+            if abs(peak1.ppm - peak2.ppm) < 0.02:
+                matching_peak = peak2
                 break
 
-    if len(common_peaks) == 0:
-        return 0.0
+        # If a matching peak was found, add it to the count of matches
+        if matching_peak:
+            if abs(peak1.integral_area - matching_peak.integral_area) < 0.5:
+                matches += 1
 
-    areas1 = np.array([peak[0].integral_area for peak in common_peaks])
-    areas2 = np.array([peak[1].integral_area for peak in common_peaks])
-    norm_areas1 = areas1 / areas1.sum()
-    norm_areas2 = areas2 / areas2.sum()
-
-    area_distance = np.linalg.norm(norm_areas1 - norm_areas2)
-
-    ppm_ranges = []
-    for peaks in [peaks1, peaks2]:
-        min_ppm = min(peaks, key=lambda p: p.ppm).ppm
-        max_ppm = max(peaks, key=lambda p: p.ppm).ppm
-        ppm_ranges.append(max_ppm - min_ppm)
-    max_ppm_range = max(ppm_ranges)
-
-    pos_distance = 1.0 - len(common_peaks) / (2.0 * len(peaks1) + 2.0 * len(peaks2) - 2.0 * len(common_peaks))
-    
-    similarity = 1.0 - area_distance - pos_distance / max_ppm_range
-    return max(similarity, 0.0)
-
+    # Calculate and return the percentage of matching peaks
+    if matches == 0:
+        return 0
+    else:
+        similarity = matches / len(peaks1) * 100
+        return similarity
 
 def find_similar(input_spectrum):
     all_spectra = Spectrum.objects.exclude(id=input_spectrum.id)
@@ -51,12 +59,12 @@ def find_similar(input_spectrum):
     most_similar_spectra = []
     top_similar_ids = []
     for i in sorted_scores:
-        if i[1] < 0.9:
+        if i[1] < 0.0:
             break
         spectrum_id = i[0]
         spectrum = Spectrum.objects.get(id=spectrum_id)
         most_similar_spectra.append(spectrum)
-        comparison = Comparison(spectrum1=input_spectrum, spectrum2=spectrum, similarity_score=round(i[1]*100))
+        comparison = Comparison(spectrum1=input_spectrum, spectrum2=spectrum, similarity_score=round(i[1]))
         comparison.save()
         top_similar_ids.append(comparison)
 

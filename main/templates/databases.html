@@ -47,6 +47,13 @@
         <div id="spectra">
             <h2>Spectra</h2>
 
+            <h5>Delete Spectrum</h5>
+            <form method="POST" action="{% url 'delete' %}" method="POST">
+              {% csrf_token %}
+              <input type="submit" name="delete_all_spectra" class="btn btn-primary" value="Delete all">
+              <input type="submit" name="delete_last_spectrum" class="btn btn-primary" value="Delete last">
+            </form>
+
             <table class="table">
               <thead>
                 <tr>

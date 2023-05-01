@@ -104,8 +104,16 @@ def integration(data, peak_table, peak_locations_ppm):
     return list
 
 def get_multiplicity(list, new_element):
-    print(list)
-    multiplicity = 's'
+    if len(list) == 1:
+        multiplicity = 's'
+    elif len(list) == 2:
+        multiplicity = 'd'
+    elif len(list) == 3:
+        multiplicity = 't'
+    elif len(list) == 4:
+        multiplicity = 'q'
+    else:
+        multiplicity = 'm'
     new_element[3] = multiplicity
     return new_element
 
@@ -201,8 +209,8 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list, solvent, name)
     spec.save()
 
     # Create peaks for the spectrum
-    for peak_area, peak_info in integral_list.items():
-        peak = Peak(spectrum=spec, ppm=peak_info[2], integral_area=peak_area)
+    for peak_position, peak_area in integral_list.items():
+        peak = Peak(spectrum=spec, ppm=peak_position, integral_area=peak_area[2])
         peak.save() 
 
     return spec
