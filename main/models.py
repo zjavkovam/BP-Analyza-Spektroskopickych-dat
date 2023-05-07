@@ -17,7 +17,7 @@ class Impurity(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     position = models.CharField(max_length=255)
-    solvent = models.ForeignKey(Solvent, on_delete=models.CASCADE)
+    solvent = models.ForeignKey(Solvent, on_delete=models.SET_NULL, null=True)
 
 class Compound(models.Model):
     id = models.AutoField(primary_key=True)
@@ -26,15 +26,13 @@ class Compound(models.Model):
 
 class Spectrum(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    solvent = models.ForeignKey(Solvent, on_delete=models.CASCADE)
-    compound = models.ForeignKey(Compound, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    solvent = models.ForeignKey(Solvent, on_delete=models.SET_NULL, null=True)
+    compound = models.ForeignKey(Compound, on_delete=models.SET_NULL, null=True)
     formated = models.TextField()
     processed = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('user', 'solvent', 'compound', 'formated')
 
 
 class Peak(models.Model):
@@ -44,8 +42,8 @@ class Peak(models.Model):
     integral_area = models.FloatField()
 
 class Comparison(models.Model):
-    spectrum1 = models.ForeignKey(Spectrum, on_delete=models.CASCADE, related_name='comparisons1')
-    spectrum2 = models.ForeignKey(Spectrum, on_delete=models.CASCADE, related_name='comparisons2')
+    spectrum1 = models.ForeignKey(Spectrum, on_delete=models.SET_NULL, null=True,  related_name='comparisons1')
+    spectrum2 = models.ForeignKey(Spectrum, on_delete=models.SET_NULL, null=True, related_name='comparisons2')
     similarity_score = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
     """ 

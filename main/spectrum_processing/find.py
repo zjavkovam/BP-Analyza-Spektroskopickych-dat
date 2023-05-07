@@ -3,13 +3,15 @@ from main.models import Spectrum
 from main.models import Comparison
 
 import numpy as np
+import math
 
 def calculate_similarity(num1, num2):
-    if num1 == 0 and num2 == 0:
-        return 1.0
-    else:
-        similarity = 1 - abs(num1 - num2) / max(num1, num2)
-        return similarity
+
+    a = np.array([num1]) # treat a as a vector with one dimension
+    b = np.array([num2]) # treat b as a vector with one dimension
+
+    cos_sim = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    return cos_sim
 
 def compare(spectrum1, spectrum2):
     # Get all the peaks for the first spectrum
@@ -24,6 +26,8 @@ def compare(spectrum1, spectrum2):
 
     # Initialize variables for counting matching peaks and total peaks in both spectra
     matches = 00
+    integral_similarity = 0
+    position_similarity = 0
 
     # Iterate through peaks in the smaller spectrum
     for peak1 in peaks1:
@@ -36,15 +40,17 @@ def compare(spectrum1, spectrum2):
 
         # If a matching peak was found, add it to the count of matches
         if matching_peak:
-            if abs(peak1.integral_area - matching_peak.integral_area) < 0.5:
-                matches += 1
-
+            integral_similarity += calculate_similarity(peak1.integral_area, peak2.integral_area)
+            position_similarity += calculate_similarity(peak1.ppm, peak2.ppm)
+            matches += 1
+    
     # Calculate and return the percentage of matching peaks
     if matches == 0:
         return 0
     else:
-        similarity = matches / len(peaks1) * 100
-        return similarity
+        print(integral_similarity, matches)
+        similarity = (integral_similarity+position_similarity) / 2
+        return similarity / len(peaks1) * 100
 
 def find_similar(input_spectrum):
     all_spectra = Spectrum.objects.exclude(id=input_spectrum.id)
