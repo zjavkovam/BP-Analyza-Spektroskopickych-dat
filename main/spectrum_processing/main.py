@@ -133,12 +133,12 @@ def join_close(uc, integral_list):
             next_position = list(integral_list.keys())[index+1]
 
             # Calculate the distance between the first two peaks
-            peak1 = uc.i(str (position) + ' ppm')
+            peak1 = uc.i(str (position) + ' ppm')  
             peak2 = uc.i(str (next_position) + ' ppm')
 
             distance = abs(peak2 - peak1)
-            #if distance <= 100:
-            if abs(position-next_position) < 0.05: 
+            if distance <= 100:
+            #if abs(position-next_position) < 0.05: 
                 #merge 
                 next_element = integral_list[next_position]
                 joined_peaks[next_position] =  next_element
@@ -192,15 +192,8 @@ def format_spectrum(integral_list):
 
 def save_spectrum(dic, udic, parameters, spectrum, integral_list, solvent, name):
 
-
-    user = User.objects.filter(name=name).first()
-
-    # If the Spectrum object doesn't exist, create a new one
-    if user is None:
-        # Create a new spectrum instance
-        user = User(name=name, password="monika")
-        user.save()
-
+    user = User(name=name, password="monika")
+    user.save()
     
     # Create a new solvent instance
     try:
@@ -210,19 +203,10 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list, solvent, name)
     
     # Create a new compounds instance
     compound = Compound.objects.filter(name="Unknown").order_by('id').first()
-
     
-    # Try to get an existing Spectrum object with the same user, solvent, compound, and formated fields
-    spec = Spectrum.objects.filter(user=user, formated=spectrum).first()
-
-    # If the Spectrum object doesn't exist, create a new one
-    if spec is None:
-        # Create a new spectrum instance
-        spec = Spectrum(user=user, solvent=solvent, compound=compound, formated=spectrum)
-        spec.save()
-
-    
-
+    # Create a new spectrum instance
+    spec = Spectrum(user=user, solvent=solvent, compound=compound, formated=spectrum)
+    spec.save()
 
     # Create peaks for the spectrum
     for peak_position, peak_area in integral_list.items():
