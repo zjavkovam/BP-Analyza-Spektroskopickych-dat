@@ -53,10 +53,13 @@ def delete_impurity(integral_list, solvent):
         position = impurity.position
         
         for peak_position in list(integral_list.keys()):
-            if abs(peak_position - float(position)) < 0.05 or abs(peak_position- 0) < 0.05 or abs(peak_position - float(solvent.position)) < 0.05:
+            if abs(peak_position - float(position)) < 0.05 or abs(peak_position - float(solvent.position)) < 0.05:
                 del integral_list[peak_position] 
-    
-    return integral_list
+
+            elif peak_position < 0.05:
+                reference_peak = integral_list[position]
+
+    return integral_list, reference_peak
 
 
 def draw_integrals(integral_list, data, ppm_scale, ax):
@@ -83,7 +86,6 @@ def find_ratios(integral_list, H, max_ratio ):
     if H != '':
         for position, value in integral_list.items():
             if float(H) == position:
-                ratios = []
                 peak_area = value[2]
                 for pos,val in integral_list.items():
                     integral_list[pos][2] = round(val[2]/ peak_area, 2)
@@ -190,7 +192,7 @@ def format_spectrum(integral_list):
 
     return new
 
-def save_spectrum(dic, udic, parameters, spectrum, integral_list, solvent, name):
+def save_spectrum(spectrum, integral_list, solvent, name, reference_peak):
 
     user = User(name=name, password="monika")
     user.save()
@@ -210,6 +212,8 @@ def save_spectrum(dic, udic, parameters, spectrum, integral_list, solvent, name)
 
     # Create peaks for the spectrum
     for peak_position, peak_area in integral_list.items():
+        #print(reference_peak)
+        #new_integral = peak_area[2] / reference_peak[2]
         peak = Peak(spectrum=spec, ppm=peak_position, integral_area=peak_area[2])
         peak.save() 
 
@@ -227,7 +231,7 @@ def main(uploaded_files, parameters):
 
     else:
         dic, data = load_data_B("media")
-        solvent = dic['acqus']['SOLVENT']
+        solvent = dic['acqus']['SOLVENT'].lower()
 
         # conversion to ppm
         udic = ng.bruker.guess_udic(dic, data)
@@ -261,7 +265,7 @@ def main(uploaded_files, parameters):
     integral_list = integration(data, peak_table, peak_locations_ppm)
 
     #Delete impurities and solvent
-    integral_list = delete_impurity(integral_list, solvent)
+    #integral_list, reference_peak = delete_impurity(integral_list, solvent)
 
     #Join close peaks 
     integral_list = join_close(uc, integral_list)
@@ -277,6 +281,7 @@ def main(uploaded_files, parameters):
     draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, parameters, threshold)
 
     formated = format_spectrum(integral_list)
-    spec = save_spectrum(dic, vdic, parameters, formated, integral_list, solvent, parameters['name'])
+    reference_peak = []
+    spec = save_spectrum(formated, integral_list, solvent, parameters['name'], reference_peak)
     return spec
 

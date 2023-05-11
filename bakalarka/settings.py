@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'main',
 ]
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
 ]
 
+SESSION_COOKIE_AGE = 2  # Expiration time in seconds (2 hours)
 ROOT_URLCONF = 'bakalarka.urls'
 
 TEMPLATES = [
