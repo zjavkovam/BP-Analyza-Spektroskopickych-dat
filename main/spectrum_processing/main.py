@@ -120,7 +120,7 @@ def get_multiplicity(list, new_element):
     return new_element
 
 
-def join_close(uc, integral_list):
+def join_close(type, uc, integral_list):
     new = {}
     new_position = list(integral_list.keys())[0]
     new_element = integral_list[new_position]
@@ -137,9 +137,15 @@ def join_close(uc, integral_list):
             # Calculate the distance between the first two peaks
             peak1 = uc.i(str (position) + ' ppm')  
             peak2 = uc.i(str (next_position) + ' ppm')
+            print(position, next_position, abs(peak2-peak1))
+
+            if type == 'b':
+                peak1, peak2 = peak1/4, peak2/4
+            else:
+                peak1, peak2 = peak1/8, peak2/8
 
             distance = abs(peak2 - peak1)
-            if distance <= 100:
+            if distance <= 20:
             #if abs(position-next_position) < 0.05: 
                 #merge 
                 next_element = integral_list[next_position]
@@ -222,12 +228,14 @@ def save_spectrum(spectrum, integral_list, solvent, name, reference_peak):
 def main(uploaded_files, parameters):
     #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds, 1H, max-ratio, name]
     vdic = 0
+    type =''
     if parameters["type"] == "varian" or (parameters["type"] == "uknown" and len(uploaded_files) == 4):
         vdic, dic, data = load_data_V("media")
         solvent = vdic["procpar"]['solvent']["values"][0]
         # conversion to ppm
         uc = ng.pipe.make_uc(dic, data)
         ppm_scale = uc.ppm_scale()
+        type = 'v'
 
     else:
         dic, data = load_data_B("media")
@@ -237,7 +245,7 @@ def main(uploaded_files, parameters):
         udic = ng.bruker.guess_udic(dic, data)
         uc = ng.fileiobase.uc_from_udic(udic)
         ppm_scale = uc.ppm_scale()
-
+        type = 'b'
    
 
     fig = plt.figure()
@@ -265,10 +273,10 @@ def main(uploaded_files, parameters):
     integral_list = integration(data, peak_table, peak_locations_ppm)
 
     #Delete impurities and solvent
-    #integral_list, reference_peak = delete_impurity(integral_list, solvent)
+    #integral_list = delete_impurity(integral_list, solvent)
 
     #Join close peaks 
-    integral_list = join_close(uc, integral_list)
+    integral_list = join_close(type,uc, integral_list)
 
     #ratios of integrals
     integral_list = find_ratios(integral_list, parameters['1H'], parameters['max-ratio'])
