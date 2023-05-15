@@ -15,6 +15,7 @@ def calculate_similarity(num1, num2):
 
 def compare(spectrum1, spectrum2):
     # Get all the peaks for the first spectrum
+    print(calculate_similarity(1.25,2))
     peaks1 = Peak.objects.filter(spectrum=spectrum1).order_by('ppm')
 
     # Get all the peaks for the second spectrum

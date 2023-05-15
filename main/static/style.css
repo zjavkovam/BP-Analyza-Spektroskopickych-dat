@@ -1,11 +1,45 @@
 /* Global styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
+    font-family: Arvo;
 }
 
 img {
     max-width: 100%;
+    margin-bottom: 20px;
+}
+
+
+h1 {
+    text-align: center;
+    margin: 25px;
+    margin-top: 100px;
+  }
+
+.navbar {
+    margin-bottom: 50px;
+}
+
+.column-spacing {
+    margin-right: 50px;
+}
+
+.process-form{
+    width: 75%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.process-form .col-md-5 h3 {
+    text-align: center;
+  }
+
+.menu {
+    margin-top: 100px;
+    width: 25%;
+}
+
+.second-col {
+    margin-top: 75px;
 }
 
 /* Form styles */
@@ -23,11 +57,13 @@ img {
 
 /* Button styles */
 .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
+    background-color: #7e99ca;
 }
 
 .btn-primary:hover {
-    background-color: #0069d9;
-    border-color: #0062cc;
+    background-color: #3c6c9e;
+}
+
+.dat {
+    margin: 0px 15px 10px 0px;
 }

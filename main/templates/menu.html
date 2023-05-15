@@ -4,10 +4,11 @@
 <html>
   <head>
     <title>Menu</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+      <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+      <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}?{% now 'U' %}">
   </head>
   <body>
-    <div class="container mt-3">
+    <div class="container mt-3 menu">
       <h1>Menu</h1>
       <form action="{% url 'menu' %}" method="post">
         {% csrf_token %}
@@ -22,9 +23,9 @@
           </div>
         </div>
         <div class="d-flex flex-column">
-          <a href="{% url 'process' %}" class="btn btn-secondary mb-2">Process Spectrum</a>
-          <a href="{% url 'database_management' %}" class="btn btn-secondary mb-2">Database Management</a>
-          <a href="{% url 'database_management' %}" class="btn btn-secondary mb-2">Find Spectrum</a>
+          <a href="{% url 'process' %}" class="btn btn-primary mb-2">Process Spectrum</a>
+          <a href="{% url 'database_management' %}" class="btn btn-primary mb-2">Database Management</a>
+          <a href="{% url 'search' %}" class="btn btn-primary mb-2">Find Spectrum</a>
         </div>
       </form>
     </div>

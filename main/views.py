@@ -35,8 +35,9 @@ def process(request):
             "show_peaks": request.POST.get('show_peaks'),
             "show_threshold": request.POST.get('show_thresholds'),
             "1H": request.POST.get('1H-ppm'),
-            "max-ratio": request.POST.get('max-ratio'),
             "name": request.session.get('name'),
+            "delete_threshold" : request.POST.get('delete_threshold'),
+            "delete_ppm" : request.POST.get('delete_ppm'),
         }
 
         for filename in os.listdir("media"):
@@ -67,7 +68,19 @@ def find(request, spectrum_id):
     return render(request, 'find.html', context)
 
 def search(request):
-    return render(request, 'find.html')
+    compound_name = request.POST.get('search_compound')
+    spectrum = request.POST.get('search_spectrum')
+
+    if compound_name:
+        compound = Compound.objects.get(name=compound_name)
+        spectra = Spectrum.objects.filter(compound=compound)
+    elif spectrum:
+        print(spectrum)
+        spectra = Spectrum.objects.filter(formated=spectrum)
+    else:
+        spectra = Spectrum.objects.filter()
+    
+    return render(request, 'search.html', {'spectra': spectra})
 
 def add(request):
     if request.method == 'POST':
@@ -77,11 +90,10 @@ def add(request):
 
         # Update the spectrum instance with the given ID
         spectrum = Spectrum.objects.get(id=spectrum_id)
-        compound, created = Compound.objects.get_or_create(molecular_formula=compound_name)
+        compound, created = Compound.objects.get_or_create(name=compound_name)
 
         # If the compound was just created, set additional attributes
         if created:
-            compound.name = "Name"
             compound.save()
         spectrum.compound = compound
         spectrum.processed = True
@@ -102,7 +114,7 @@ def menu(request):
 
 def database_management(request):
     if request.method == 'GET':
-        spectra = Spectrum.objects.filter(processed=True)
+        spectra = Spectrum.objects.filter()
         solvents = Solvent.objects.all()
         impurities = Impurity.objects.all()
         compounds = Compound.objects.all()
@@ -199,10 +211,10 @@ def database_management(request):
 def delete(request):
     if request.method == 'POST':
         if 'delete_all_spectra' in request.POST:
-            Compound.objects.all().delete()
+            Spectrum.objects.all().delete()
             messages.success(request, 'Deleted successfully.')
         if 'delete_last_spectrum' in request.POST:
-            Compound.objects.last().delete()
+            Spectrum.objects.last().delete()
             messages.success(request, 'Deleted successfully.')
         if 'delete_all_solvent' in request.POST:
             Solvent.objects.all().delete()

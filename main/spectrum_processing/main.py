@@ -56,10 +56,7 @@ def delete_impurity(integral_list, solvent):
             if abs(peak_position - float(position)) < 0.05 or abs(peak_position - float(solvent.position)) < 0.05:
                 del integral_list[peak_position] 
 
-            elif peak_position < 0.05:
-                reference_peak = integral_list[position]
-
-    return integral_list, reference_peak
+    return integral_list
 
 
 def draw_integrals(integral_list, data, ppm_scale, ax):
@@ -76,12 +73,10 @@ def draw_integrals(integral_list, data, ppm_scale, ax):
         ax.text(peak_scale[0], 0.5 * peak.sum() / 100. + peak.max(), round(integral_list[i][2], 2), fontsize=10)
 
 
-def find_ratios(integral_list, H, max_ratio ):
+def find_ratios(integral_list, H):
     # ppm: b,e,area 
 
-    maximum = max(integral_list.values(), key=lambda x: x[2])[2]
-    for key,values in integral_list.items():
-        integral_list[key][2] = round(values[2] * (float(max_ratio) / maximum), 2)
+    minimum = max(integral_list.values(), key=lambda x: x[2])[2]
 
     if H != '':
         for position, value in integral_list.items():
@@ -90,6 +85,9 @@ def find_ratios(integral_list, H, max_ratio ):
                 for pos,val in integral_list.items():
                     integral_list[pos][2] = round(val[2]/ peak_area, 2)
                 break
+    else:
+        for pos,val in integral_list.items():
+            integral_list[pos][2] = round(val[2]/ minimum, 2)
     return integral_list
 
 
@@ -105,15 +103,46 @@ def integration(data, peak_table, peak_locations_ppm):
         list[round(loc_ppm,2)] = [loc_pts - hwhm_int, loc_pts + hwhm_int + 1, peak_area, ' ']
     return list
 
-def get_multiplicity(list, new_element):
-    if len(list) == 1:
+
+def delete_splits(peaks):
+    new = {}
+    peaks = dict(sorted(peaks.items(), key=lambda x: x[1][2])) 
+
+    if len(peaks) == 1:
+        return peaks
+    
+    max_position = list(peaks.keys())[-1]
+    for index, position in enumerate(peaks.keys()):
+        if  (peaks[position][2] / peaks[max_position][2]) > 0.2:
+            new[position] = peaks[position]
+    print(peaks, new)
+
+    new = dict(sorted(new.items()))
+    return new    
+
+def get_multiplicity(peaks, new_element):
+    keys = list(peaks.keys())  
+    peaks = delete_splits(peaks)
+
+    if len(peaks) == 1:
         multiplicity = 's'
-    elif len(list) == 2:
-        multiplicity = 'd'
-    elif len(list) == 3:
-        multiplicity = 't'
-    elif len(list) == 4:
-        multiplicity = 'q'
+    elif len(peaks) == 2:
+        if 0.9 < (peaks[keys[0]][2]/peaks[keys[1]][2]) < 1.1:
+            multiplicity = 'd'
+        else:
+            multiplicity = 'm'
+    elif len(peaks) == 3 :
+        if 1.4 < peaks[keys[0]][2] / peaks[keys[1]][2] < 1.6 and 0.9 < peaks[keys[0]][2] / peaks[keys[2]][2] < 1.1:
+            multiplicity = 't'
+        else:
+            multiplicity = 'm'
+    elif len(peaks) == 4:
+        if 0.9 < (peaks[keys[0]][2]/peaks[keys[1]][2]) < 1.1 and  0.9 < (peaks[keys[2]][2]/peaks[keys[3]][2]) < 1.1 and  0.9 < (peaks[keys[0]][2]/peaks[keys[2]][2]) < 1.1:
+            multiplicity = 'dd'
+        elif 1.4 < (peaks[keys[0]][2]/peaks[keys[1]][2]) < 1.6 and  0.9 < (peaks[keys[2]][2]/peaks[keys[3]][2]) < 1.1 and  1.4 < (peaks[keys[0]][2]/peaks[keys[2]][2]) < 1.6:
+            multiplicity = 'q'
+        else:
+            multiplicity = 'm'
     else:
         multiplicity = 'm'
     new_element[3] = multiplicity
@@ -137,7 +166,6 @@ def join_close(type, uc, integral_list):
             # Calculate the distance between the first two peaks
             peak1 = uc.i(str (position) + ' ppm')  
             peak2 = uc.i(str (next_position) + ' ppm')
-            print(position, next_position, abs(peak2-peak1))
 
             if type == 'b':
                 peak1, peak2 = peak1/4, peak2/4
@@ -190,6 +218,22 @@ def draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, par
     fig.savefig('./main/static/figure_nmrglue.png')
   
 
+def clean(integral_list, threshold, ppm):
+    new = {}
+    for pos, val in integral_list.items():
+        new[pos] = val
+        if val[2] == 0:
+            del new[pos]
+
+        elif threshold and val[2] < float(threshold):
+            del new[pos]
+
+        elif ppm and pos == float(ppm):
+            del new[pos] 
+
+
+    return new
+
 
 def format_spectrum(integral_list):
     new = []
@@ -198,9 +242,9 @@ def format_spectrum(integral_list):
 
     return new
 
-def save_spectrum(spectrum, integral_list, solvent, name, reference_peak):
+def save_spectrum(spectrum, integral_list, solvent, name):
 
-    user = User(name=name, password="monika")
+    user = User(name=name)
     user.save()
     
     # Create a new solvent instance
@@ -218,15 +262,13 @@ def save_spectrum(spectrum, integral_list, solvent, name, reference_peak):
 
     # Create peaks for the spectrum
     for peak_position, peak_area in integral_list.items():
-        #print(reference_peak)
-        #new_integral = peak_area[2] / reference_peak[2]
         peak = Peak(spectrum=spec, ppm=peak_position, integral_area=peak_area[2])
         peak.save() 
 
     return spec
 
 def main(uploaded_files, parameters):
-    #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds, 1H, max-ratio, name]
+    #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds, 1H, max-ratio, name, delete_threshold, delete_ppm]
     vdic = 0
     type =''
     if parameters["type"] == "varian" or (parameters["type"] == "uknown" and len(uploaded_files) == 4):
@@ -272,15 +314,16 @@ def main(uploaded_files, parameters):
     #integrals
     integral_list = integration(data, peak_table, peak_locations_ppm)
 
-    #Delete impurities and solvent
-    #integral_list = delete_impurity(integral_list, solvent)
-
     #Join close peaks 
     integral_list = join_close(type,uc, integral_list)
 
-    #ratios of integrals
-    integral_list = find_ratios(integral_list, parameters['1H'], parameters['max-ratio'])
+    #Delete impurities and solvent
+    integral_list = delete_impurity(integral_list, solvent)
 
+    #ratios of integrals
+    integral_list = find_ratios(integral_list, parameters['1H'])
+
+    integral_list = clean(integral_list, parameters['delete_threshold'], parameters['delete_ppm'])
     #draw integrals
     if parameters["show_integrals"]:
         draw_integrals(integral_list, data, ppm_scale, ax)
@@ -289,7 +332,6 @@ def main(uploaded_files, parameters):
     draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, parameters, threshold)
 
     formated = format_spectrum(integral_list)
-    reference_peak = []
-    spec = save_spectrum(formated, integral_list, solvent, parameters['name'], reference_peak)
+    spec = save_spectrum(formated, integral_list, solvent, parameters['name'])
     return spec
 

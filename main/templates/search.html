@@ -1,9 +1,11 @@
+
 {% load static %}
+
 
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Spectra Database</title>
+        <title>My NMR App</title>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}?{% now 'U' %}">
     </head>
@@ -27,6 +29,24 @@
         </nav>
         <div class="container">
             <h1>Spectra Database</h1>
+            <form method="POST" action="{% url 'search' %}">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <input type="text" class="form-control"  id="search_compound" name="search_compound"  placeholder="Compound Name">
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control"  id="search_spectrum" name="search_spectrum"  placeholder="Formated Spectrum">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <button type="submit" name="search" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </form>
             <hr>
             <table class="table">
                 <thead>

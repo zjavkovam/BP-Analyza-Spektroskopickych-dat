@@ -6,6 +6,9 @@
   <head>
     <title>Databases</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap-reboot.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}?{% now 'U' %}">
+
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -47,11 +50,10 @@
         <div id="spectra">
             <h2>Spectra</h2>
 
-            <h5>Delete Spectrum</h5>
-            <form method="POST" action="{% url 'delete' %}" method="POST">
+            <form method="POST" action="{% url 'delete' %}" method="POST" >
               {% csrf_token %}
-              <input type="submit" name="delete_all_spectra" class="btn btn-primary" value="Delete all">
-              <input type="submit" name="delete_last_spectrum" class="btn btn-primary" value="Delete last">
+              <input type="submit" name="delete_all_spectra" class="btn btn-primary dat" value="Delete all">
+              <input type="submit" name="delete_last_spectrum" class="btn btn-primary dat" value="Delete last">
             </form>
 
             <table class="table">
@@ -105,8 +107,8 @@
             <h5>Delete Solvent</h5>
             <form method="POST" action="{% url 'delete' %}" method="POST">
               {% csrf_token %}
-              <input type="submit" name="delete_all_solvent" class="btn btn-primary" value="Delete all">
-              <input type="submit" name="delete_last_solvent" class="btn btn-primary" value="Delete last">
+              <input type="submit" name="delete_all_solvent" class="btn btn-primary dat" value="Delete all">
+              <input type="submit" name="delete_last_solvent" class="btn btn-primary dat" value="Delete last">
             </form>
           
           
@@ -161,8 +163,8 @@
             <h5>Delete Impurity</h5>
             <form method="POST" action="{% url 'delete' %}" method="POST">
               {% csrf_token %}
-              <input type="submit" name="delete_all_impurities" class="btn btn-primary" value="Delete all">
-              <input type="submit" name="delete_last_impurity" class="btn btn-primary" value="Delete last">
+              <input type="submit" name="delete_all_impurities" class="btn btn-primary dat" value="Delete all">
+              <input type="submit" name="delete_last_impurity" class="btn btn-primary dat" value="Delete last">
             </form>
 
             <table class="table">
@@ -200,11 +202,6 @@
                         </div>
                     </div>
                     <div class="col">
-                      <div class="form-group">
-                          <input type="text" class="form-control" id="formula" name="formula" placeholder='Molecular formula'>
-                      </div>
-                    </div>
-                    <div class="col">
                         <button type="submit" name="add_compound" class="btn btn-primary">Add Compound</button>
                     </div>
                 </div>
@@ -213,8 +210,8 @@
             <h5>Delete Compound</h5>
             <form method="POST" action="{% url 'delete' %}" method="POST">
               {% csrf_token %}
-              <input type="submit" name="delete_all_compounds" class="btn btn-primary" value="Delete all">
-              <input type="submit" name="delete_last_compound" class="btn btn-primary" value="Delete last">
+              <input type="submit" name="delete_all_compounds" class="btn btn-primary dat" value="Delete all">
+              <input type="submit" name="delete_last_compound" class="btn btn-primary dat" value="Delete last">
             </form>
           
 
@@ -223,14 +220,14 @@
                 <tr>
                   <th>Index</th>
                   <th>Compound</th>
-                  <th>Name</th>
+                  <th>Count</th>
                 </tr>
               </thead>
               <tbody>
                 {% for compound in compounds %}
                 <tr>
                     <td>{{ compound.id }}</td>
-                    <td>{{ compound.molecular_formula }}</td>
+                    <td>{{ compound.name }}</td>
                     <td>{{ compound.name }}</td>
                   </tr>
                   {% endfor %}

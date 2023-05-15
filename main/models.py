@@ -5,7 +5,6 @@ from django.db import models
 class User(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
 
 
 class Solvent(models.Model):
@@ -22,7 +21,6 @@ class Impurity(models.Model):
 class Compound(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    molecular_formula = models.CharField(max_length=255)
 
 class Spectrum(models.Model):
     id = models.AutoField(primary_key=True)
@@ -32,7 +30,6 @@ class Spectrum(models.Model):
     formated = models.TextField()
     processed = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
-
 
 
 class Peak(models.Model):
@@ -46,7 +43,3 @@ class Comparison(models.Model):
     spectrum2 = models.ForeignKey(Spectrum, on_delete=models.SET_NULL, null=True, related_name='comparisons2')
     similarity_score = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    """ 
-    class Meta:
-        unique_together = ('spectrum1', 'spectrum2')
-    """

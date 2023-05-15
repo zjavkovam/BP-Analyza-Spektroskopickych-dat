@@ -2,15 +2,13 @@
 
 <!DOCTYPE html>
 <html>
-<head>
-	<title>My NMR App</title>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
-	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous"/>
-</head>
-<body>
+	<head>
+		<title>Process spectrum</title>
+		
+		  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+		  <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}?{% now 'U' %}">
+	  </head>
+	<body>
 	<nav class="navbar navbar-expand-lg navbar-light bg-light">
 		<div class="container-fluid">
 		  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,13 +26,21 @@
 		  </div>
 		</div>
 	  </nav>
-	<form method="post" enctype="multipart/form-data" action="{% url 'process' %}">
+	<form method="post" class = "process-form" enctype="multipart/form-data" action="{% url 'process' %}">
 		{% csrf_token %}
-		<div class="row">
-			<div class="col-md-6">
+		<div class="row" >
+			<div class="col-md-5 column-spacing">
+				<h3>Processed Spectrum</h3>
+				{% if spec %}
 				<img src="{% static 'figure_nmrglue.png' %}?{% now 'U' %}" alt="My Image">
+				<h4>Spectrum in text format</h4>
+				<p>{{ spec }}</p>
+				<div class="text-center mt-3">
+					<a href="{% url 'find' spectrum_id=spectrum_id %}" class="btn btn-primary">Find Similar</a>
+				</div>
+				{% endif %}
 			</div>
-			<div class="col-md-6">
+			<div class="col-md-5 second-col">
 				<div class="form-group">
 					<label for="threshold">Threshold:</label>
 					<select class="form-control" id="threshold" name="threshold">
@@ -53,13 +59,13 @@
 					<div class="col pr-md-1">
 						<div class="form-group">
 							<label for="ppm_start">PPM start:</label>
-							<input type="number" class="form-control" id="ppm_start" name="ppm_start" min="-10" max="10" step="0.1" value="-0.5">
+							<input type="number" class="form-control" id="ppm_start" name="ppm_start" min="-10" max="10" step="0.01" value="-0.5">
 						</div>
 					</div>
 					<div class="col">
 						<div class="form-group">
 							<label for="ppm_end">PPM end:</label>
-							<input type="number" class="form-control" id="ppm_end" name="ppm_end" min="-10" max="15" step="0.1" value="10">
+							<input type="number" class="form-control" id="ppm_end" name="ppm_end" min="-10" max="15" step="0.01" value="10">
 						</div>
 					</div>
 				</div>
@@ -78,43 +84,48 @@
 						<label class="form-check-label" for="varian">Varian</label>
 					</div>
 				</div>
-				<div class="form-check form-check-inline">
-					<input type="checkbox" class="form-check-input" id="show_thresholds" name="show_thresholds" value="1" checked>
-					<label class="form-check-label" for="show_thresholds">Show threshold</label>
-				</div>
-				<div class="form-check form-check-inline">
-					<input type="checkbox" class="form-check-input" id="show_peaks" name="show_peaks" value="1">
-					<label class="form-check-label" for="show_peaks">Show peaks</label>
-				</div>
-				<div class="form-check form-check-inline">
-					<input type="checkbox" class="form-check-input" id="show_integrals" name="show_integrals" value="1" checked>
-					<label class="form-check-label" for="show_integrals">Show integrals</label>
-				</div>
 				<div class ="form-group">
-					<label for="1H-ppm">PPM for peak set as 1H</label>
-					<input type="number" class="form-control" id="1H-ppm" name="1H-ppm" min="0" step="0.01">
+					<label for="Plot options">Plot options:</label><br>
+					<div class="form-check form-check-inline">
+						<input type="checkbox" class="form-check-input" id="show_thresholds" name="show_thresholds" value="1" checked>
+						<label class="form-check-label" for="show_thresholds">Show threshold</label>
+					</div>
+					<div class="form-check form-check-inline">
+						<input type="checkbox" class="form-check-input" id="show_peaks" name="show_peaks" value="1">
+						<label class="form-check-label" for="show_peaks">Show peaks</label>
+					</div>
+					<div class="form-check form-check-inline">
+						<input type="checkbox" class="form-check-input" id="show_integrals" name="show_integrals" value="1" checked>
+						<label class="form-check-label" for="show_integrals">Show integrals</label>
+					</div>
 				</div>
-				<div class="form=group">
-					<label for="max-ratio">Maximum Integral Area:</label>
-					<select id="max-ratio" name="max-ratio">
-						<option value="2">2</option>
-						<option value="3" selected>3</option>
-						<option value="4">4</option>
-						<option value="5">5</option>
-					</select><br><br>
+				<div class="form-group">
+					<input type="number" class="form-control" id="1H-ppm" name="1H-ppm" min="0" step="0.01" placeholder="PPM for peak set as 1H">
+				</div>
+				<div class="form-row">
+					<div class="col pr-md-1">
+						<div class="form-group">
+							<label for="threshold">Delete peaks smaller then:</label>
+							<input type="number" class="form-control" id="delete_threshold" name="delete_threshold" min="-10" max="10" step="0.01" >
+						</div>
+					</div>
+					<div class="col">
+						<div class="form-group">
+							<label for="delete">Delete specific peak by ppm:</label>
+							<input type="number" class="form-control" id="delete_ppm" name="delete_ppm" min="-10" max="15" step="0.01" >
+						</div>
+					</div>
 				</div>
 				<div class="form-group">
 					<label for="my_directory">Choose a directory</label>
 					<input type="file" id="my_directory" name="my_directory" webkitdirectory mozdirectory multiple>
 				</div>
-				<button type="submit" class="btn btn-primary">Submit</button>
-				<p>{{ spec }}</p>
+				<div class="text-center mt-3">
+					<button type="submit" class="btn btn-primary">Submit</button>
+				</div>
 			</div>
 		</div>
 	</form>
-	<div class="text-center mt-3">
-		<a href="{% url 'find' spectrum_id=spectrum_id %}" class="btn btn-primary">Find Similar</a>
-	</div>
 	
 
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
