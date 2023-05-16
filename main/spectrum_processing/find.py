@@ -6,16 +6,10 @@ import numpy as np
 import math
 
 def calculate_similarity(num1, num2):
-
-    a = np.array([num1]) # treat a as a vector with one dimension
-    b = np.array([num2]) # treat b as a vector with one dimension
-
-    cos_sim = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-    return cos_sim
+    return 1 - abs(num1 - num2) / max(num1, num2)
 
 def compare(spectrum1, spectrum2):
     # Get all the peaks for the first spectrum
-    print(calculate_similarity(1.25,2))
     peaks1 = Peak.objects.filter(spectrum=spectrum1).order_by('ppm')
 
     # Get all the peaks for the second spectrum
@@ -49,7 +43,7 @@ def compare(spectrum1, spectrum2):
     if matches == 0:
         return 0
     else:
-        print(integral_similarity, matches)
+        #print(integral_similarity, matches)
         similarity = (integral_similarity+position_similarity) / 2
         return similarity / len(peaks1) * 100
 

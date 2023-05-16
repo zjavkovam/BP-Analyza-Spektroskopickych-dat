@@ -76,7 +76,7 @@ def draw_integrals(integral_list, data, ppm_scale, ax):
 def find_ratios(integral_list, H):
     # ppm: b,e,area 
 
-    minimum = max(integral_list.values(), key=lambda x: x[2])[2]
+    maximum = max(integral_list.values(), key=lambda x: x[2])[2]
 
     if H != '':
         for position, value in integral_list.items():
@@ -87,7 +87,7 @@ def find_ratios(integral_list, H):
                 break
     else:
         for pos,val in integral_list.items():
-            integral_list[pos][2] = round(val[2]/ minimum, 2)
+            integral_list[pos][2] = round(val[2]/ maximum, 2)
     return integral_list
 
 
@@ -115,14 +115,13 @@ def delete_splits(peaks):
     for index, position in enumerate(peaks.keys()):
         if  (peaks[position][2] / peaks[max_position][2]) > 0.2:
             new[position] = peaks[position]
-    print(peaks, new)
 
     new = dict(sorted(new.items()))
     return new    
 
 def get_multiplicity(peaks, new_element):
-    keys = list(peaks.keys())  
     peaks = delete_splits(peaks)
+    keys = list(peaks.keys())  
 
     if len(peaks) == 1:
         multiplicity = 's'
@@ -242,28 +241,37 @@ def format_spectrum(integral_list):
 
     return new
 
-def save_spectrum(spectrum, integral_list, solvent, name):
+def save_spectrum(spectrum, integral_list, solvent, name, H):
+    if H != '':
+        integral_list = find_ratios(integral_list, '')
 
-    user = User(name=name)
-    user.save()
-    
+    user = User.objects.filter(name=name).first()
+    if user is None:
+        user = User(name=name)
+        user.save()
+
     # Create a new solvent instance
     try:
         solvent = Solvent.objects.get(name=solvent)
     except Solvent.DoesNotExist:
         return -1
-    
-    # Create a new compounds instance
-    compound = Compound.objects.filter(name="Unknown").order_by('id').first()
-    
-    # Create a new spectrum instance
-    spec = Spectrum(user=user, solvent=solvent, compound=compound, formated=spectrum)
-    spec.save()
 
-    # Create peaks for the spectrum
-    for peak_position, peak_area in integral_list.items():
-        peak = Peak(spectrum=spec, ppm=peak_position, integral_area=peak_area[2])
-        peak.save() 
+    # Create a new compounds instance
+    compound = Compound.objects.filter(name="Unknown").first()
+
+    # Check if the spectrum already exists
+    spec = Spectrum.objects.filter(user=user, compound=compound, formated=spectrum).first()
+
+    if spec is None:
+        # Create a new spectrum instance
+        spec = Spectrum(user=user, solvent=solvent, compound=compound, formated=spectrum)
+        spec.save()
+
+        # Create peaks for the spectrum
+        for peak_position, peak_area in integral_list.items():
+            peak = Peak(spectrum=spec, ppm=peak_position, integral_area=peak_area[2])
+            print(peak.integral_area)
+            peak.save()
 
     return spec
 
@@ -332,6 +340,6 @@ def main(uploaded_files, parameters):
     draw_plot(peak_locations_ppm, peak_amplitudes, ppm_scale, data, fig, ax, parameters, threshold)
 
     formated = format_spectrum(integral_list)
-    spec = save_spectrum(formated, integral_list, solvent, parameters['name'])
+    spec = save_spectrum(formated, integral_list, solvent, parameters['name'], parameters['1H'])
     return spec
 

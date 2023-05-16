@@ -124,21 +124,15 @@ def database_management(request):
         if 'add_compound' in request.POST:
             # Handle add compound form submission
             name = request.POST.get('name')
-            formula = request.POST.get('formula')
 
             # validate form data
             if not name:
                 messages.error(request, 'Name field is required.')
                 return redirect('database_management')
-            if not formula:
-                messages.error(request, 'Molecular Formula field is required.')
-                return redirect('database_management')
-  
 
             # create new solvent object
             compound = Compound(
                 name = name,
-                molecular_formula = formula,
             )
 
             # save new spectrum to database
@@ -229,12 +223,15 @@ def delete(request):
             Impurity.objects.last().delete()
             messages.success(request, 'Deleted successfully.')
         if 'delete_all_compounds' in request.POST:
-            Compound.objects.all().delete()
+            Compound.objects.exclude(name="Unknown").delete()
             messages.success(request, 'Deleted successfully.')
-        if 'delete_last_compund' in request.POST:
-            Compound.objects.last().delete()
-            messages.success(request, 'Deleted successfully.')
-           
+        if 'delete_last_compound' in request.POST:
+            last_compound = Compound.objects.exclude(name="Unknown").last()
+            if last_compound is not None:
+                last_compound.delete()
+                messages.success(request, 'Deleted successfully.')
+            else:
+                messages.error(request, 'No compounds found to delete.')
            
         return redirect('database_management')
 
