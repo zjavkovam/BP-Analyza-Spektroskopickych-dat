@@ -24,7 +24,7 @@
         </div>
         </nav>
         <div class="container">
-            <h1>Search and Add to Database</h1>
+            <h1>Most Similar Spectra</h1>
             <p>Spectrum being processed: {{ spec }}</p>     
            <form method="POST" enctype="multipart/form-data" action="{% url 'add' %}">
                 {% csrf_token %}

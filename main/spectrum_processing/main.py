@@ -155,7 +155,7 @@ def join_close(type, uc, integral_list):
     max_peak_value = new_element[2]
     max_peak_position = new_position
 
-    joined_peaks = {new_position:new_element}
+    joined_peaks = {new_position:new_element} # for multiplicity 
     for index, position in enumerate(integral_list.keys()):
         # Prevent going out of index
         if index < len(integral_list.keys()) - 1:
@@ -178,7 +178,7 @@ def join_close(type, uc, integral_list):
                 next_element = integral_list[next_position]
                 joined_peaks[next_position] =  next_element
                 
-                new_area = integral_list[new_position][2] + integral_list[next_position][2]                    
+                new_area = new_element[2] + next_element[2]                  
                 if integral_list[next_position][2] > max_peak_value:
                     max_peak_position = next_position
                     max_peak_value = integral_list[next_position][2]
@@ -279,7 +279,7 @@ def main(uploaded_files, parameters):
     #parameters = [instrument_type, threshold_num, ppm_start, ppm_end, show_integrals, show_peaks, show_thresholds, 1H, max-ratio, name, delete_threshold, delete_ppm]
     vdic = 0
     type =''
-    if parameters["type"] == "varian" or (parameters["type"] == "uknown" and len(uploaded_files) == 4):
+    if parameters["type"] == "varian" or (parameters["type"] == "auto" and len(uploaded_files) == 4):
         vdic, dic, data = load_data_V("media")
         solvent = vdic["procpar"]['solvent']["values"][0]
         # conversion to ppm
@@ -300,7 +300,6 @@ def main(uploaded_files, parameters):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-
 
     #peak picking
     # Calculate the baseline noise level using the MAD method

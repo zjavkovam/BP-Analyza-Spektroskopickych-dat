@@ -6,6 +6,8 @@ import numpy as np
 import math
 
 def calculate_similarity(num1, num2):
+    if num2 == 0:
+        return 1
     return 1 - abs(num1 - num2) / max(num1, num2)
 
 def compare(spectrum1, spectrum2):

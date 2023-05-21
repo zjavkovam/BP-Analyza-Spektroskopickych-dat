@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
 ]
 
-SESSION_COOKIE_AGE = 2000  # Expiration time in seconds (2 hours)
+SESSION_COOKIE_AGE = 7200  # Expiration time in seconds (2 hours)
 ROOT_URLCONF = 'bakalarka.urls'
 
 TEMPLATES = [
